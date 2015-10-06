@@ -1,7 +1,7 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1348\cocoasubrtf170
 {\fonttbl\f0\fswiss\fcharset0 Helvetica;}
 {\colortbl;\red255\green255\blue255;}
-\margl1440\margr1440\vieww12600\viewh13740\viewkind1
+\margl1440\margr1440\vieww12900\viewh13700\viewkind1
 \deftab720
 \pard\tx720\tx1440\tx2160\tx2880\tx3600\tx4320\tx5040\tx5760\tx6480\tx7200\tx7920\tx8640\pardeftab720\ri0\qc
 
@@ -33,11 +33,86 @@ User role: Traveler\
 Goal: To get up-to-date CTFastrak information from the system.\
 Reason: Traveler is better able to plan a route.\
 \
-User Story #2: TITLE\
+User Story #2: GET NEAREST LOCATION\
+Pre-condition: System is accessible; Traveler is logged into the system; Locations are available\
+Post-condition: Traveler is able to retrieve nearest stop location\
+User role: Traveler\
+Goal: Traveler can access the application's get nearest location feature and the app will determine the stop location nearest to the traveler\
+Reason: Traveler should be able to access the nearest bus stop location so that they can plan their route accordingly\
+\
+User Story #3: SET DESTINATION\
+Pre-condition: System is accessible; Traveler is logged into the system; Locations are pre-loaded into the system\
+Post-condition: Traveler is able to set a destination\
+User role: Traveler\
+Goal: Traveler can access the application's set detination feature and specify a destination that they would like to travel to\
+Reason: Traveler should be able to set a destination that they would like to travel to in order to accomodate travel plans\
+\
+User Story #4: PICK ROUTE\
+Pre-condition: System is accessible; Traveler is logged into the system; Routes have been calculated based on traveler's input\
+Post-condition: Traveler is able to pick a route\
+User role: Traveler\
+Goal: Traveler can access the application's pick route feature and select from a list of calculated routes that the application has generated based on the user's input\
+Reason: Traveler should be able to pick a prefered route to facilitate travel needs\
+\
+User Story #2: JSON getting bus stop information from CTFastTrack\
+Pre-condition: CTFastTrack provides bus stop information in JSON format\
+Post-condition: Bus stop data gets sent to user\
+User role: JSON Data\
+Goal: To get up-to-date location of bus stops\
+Reason: Responding to User\'92s request for bus stop location\
+\
+User Story #3: JSON getting bus information from CTFastTrack\
+Pre-condition: CTFastTrack provides bus information in JSON format\
+Post-condition: Bus data gets sent to user\
+User role: JSON Data\
+Goal: To get up-to-date location of buses\
+Reason: Responding to User\'92s request for bus location\
+\
+User Story #4: User is displayed bus stop information\
+Pre-condition: System is online and reachable. User is connected to the system.\
+Post-condition: User is able to view most current bus information\
+User role: Traveler\
+Goal: To get up-to-date location of bus stops\
+Reason: Traveler is better able to plan a route\
+\
+User Story #2: Get bus stop information\
+Pre-condition: System is online and reachable. User is connected to the system.\
+Post-condition: The user is able to receive information about bus stop locations and projected arrival times.\
+User role: Traveler\
+Goal: The user will be able to look at nearby bus stop locations and figure out which are closest. The next upcoming bus arrival times will also be listed for each location.\
+Reason: The user will be able to figure out which stop to go to.\
+\
+User Story #3: Receive GTFS Notifications\
+Pre-condition: System is online and reachable. User is connected to the system. The user is either allowing automatic notifications or requests an update of GTFS data.\
+Post-condition: The user will receive all up to date information from the GTFS data, including any changes to route information.\
+User role: Traveler\
+Goal: The user will be able to receive any updated information about the bus arrival times, ensuring that the data shown to the user is as accurate as possible. The notifications will update the user to any important changes (i.e. a delayed bus).\
+Reason: The user will be alerted of any changes in bus routes and be able to plan a better route if the alerts affect him or her.\
+\
+User Story #11: GTFS interface accepts live event/delay data.\
+Pre-condition: GTFS API is available. Interface is able to access GTFS data.\
+Post-condition: System listens and recieves live event and delay information. This information is displayed in the user interface.\
+User role: The GTFS interface.\
+Goal: Live event data is relayed from the CTFastrak API to the user interface.\
+Reason: Traveler is able to receive notifications about route conditions and events.\
+\
+User Story #12: GTFS interface accepts live bus information.\
+Pre-condition: GTFS API is available. Interface is able to access GTFS data. There is bus information available.\
+Post-condition: System listens and receives live bus status information. This information is displayed in the user interface.\
+User role: The GTFS interface\
+Goal: Live bus data is accepted from the CTFastrak API and displayed to the user interface.\
+Reason: Traveler is able to view buses live on the map.\
+\
+User Story #13: GTFS interface accepts live information about stops.\
+Pre-condition: GTFS API is available. Interface is able to access GTFS data. There is bus stop information available.\
+Post-condition: System listens and receives live bus status information. This information is displayed in the user interface.\
+User role: The GTFS interface.\
+Goal: Live bus stop information is accepted from the CTFastrak API and displayed to the user interface.\
+Reason: Traveler is able to view stops and live stop conditions on the map.\
+\
+User Story #X: TITLE\
 Pre-condition:\
 Post-condition:\
 User role:\
 Goal:\
-Reason:\
-\
-}
+Reason:}
