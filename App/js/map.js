@@ -6,6 +6,8 @@ function initMap() {
   });
   
   var infoWindow = new google.maps.InfoWindow({map: map});
+  var bus_stops = {};
+  var buses = {};
 
   // Try HTML5 geolocation.
   if (navigator.geolocation) {
@@ -30,12 +32,45 @@ function initMap() {
   //Testing create functions
   createBus(41.6, -72.7872, 1);
   createBusStop(41.7, -72.7872, 2);
+
+  // CORS issue workaround for CTFastrak's shitty API
+  function updateMap() {
+      $.getJSON('http://whateverorigin.org/get?url=' + encodeURIComponent('http://65.213.12.244/realtimefeed/vehicle/vehiclepositions.json') + '&callback=?', function(data){
+        console.log("This is from the JSON feed via whateverorigin api", data.contents);
+        for (var i = 0; i < data.contents.entity.length; i++) {
+            var bus = data.contents.entity[i];
+            var bus_label = bus.id, latitude = bus.vehicle.position.latitude, longitude = bus.vehicle.position.longitude;
+            if (buses.hasOwnProperty(bus_label)) {
+                var position = new google.maps.LatLng(latitude, longitude);
+                buses[bus_label].setPosition(position);
+
+            } else {
+                buses[bus_label] = createBus(latitude, longitude, bus_label);
+            }
+        }
+        
+      });
+  }
+  updateMap();
+
+  var updateInterval = setInterval(updateMap, 30000);
   
+  /*$.ajax({
+      type: "GET",
+      url: "http://65.213.12.244/realtimefeed/vehicle/vehiclepositions.json",
+      success: function (response) {
+        console.log(response);
+      },
+      error: function(err) {
+        console.log("Error:", err);
+      }
+  
+  });*/
   $.ajax({
   	type: "GET",
   	url: "http://gisdata.hartford.gov/datasets/453fb4c1dff74efdbdb46fadfd257e28_0.geojson",
   	success: function(dataset){
-  		console.log(dataset);
+  		console.log("This is from the GTFS feed via hartford.gov api", dataset);
   		for(var i = 0; i < dataset.features.length; i++){
   			var latitude = dataset.features[i].properties.latitude;
   			var longitude = dataset.features[i].properties.longitude;
@@ -65,7 +100,7 @@ function createBus(latitude, longitude, busNumber){
     	map: map,
     	title: 'Bus #' + busNumber
   	});
-  	var contentString = 'This is a test bus tooltip';
+  	var contentString = 'Bus ' + busNumber;
    
    	var infoWindow = new google.maps.InfoWindow({
     	content: contentString,
@@ -75,6 +110,7 @@ function createBus(latitude, longitude, busNumber){
   	marker.addListener('click', function() {
   		infoWindow.open(map,marker);
   	});
+    return marker;
 }
 
 //Creates a bus stop marker and its' tooltip.
@@ -95,6 +131,7 @@ function createBusStop(latitude, longitude, busStopNumber){
   	marker.addListener('click', function() {
   		infoWindow.open(map,marker);
   	});
+    return marker;
 }
 
 //Not done yet
