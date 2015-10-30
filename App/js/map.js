@@ -160,8 +160,28 @@ var MapInterface = {
         // TODO figure out if updating is different from creating
         this.trips[trip.id] = trip;
     },
-    createBusTerminal : function() {
+    createBusTerminal : function(bus_terminal) {
+        var marker = new google.maps.Marker({
+            position: {lat: parseFloat(bus_terminal.stop_lat), lng: parseFloat(bus_terminal.stop_lon) },
+            map: this.map,
+            icon: {
+                url: 'img/measle_blue.png',
+                size: new google.maps.Size(7,7),
+                origin: new google.maps.Point(0,0),
+                anchor: new google.maps.Point(3,3),
+            },
 
+            title: bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")"
+        });
+       
+        var infoWindow = new google.maps.InfoWindow({
+            content:  bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
+            maxWidth: 200
+        });
+      
+        marker.addListener('click', function() {
+            infoWindow.open(this.map, marker);
+        });
     },
     updateBusTerminal : function() {
 
@@ -194,6 +214,19 @@ var MapInterface = {
             zoom: 15
         });
 
+
+        // Load the static bus stop locations
+        (function(_mapInterface) {
+        $.getJSON('data/stops.json', function(data) { 
+            console.log(data);
+            _mapInterface.busterminals = data;
+            for (var stop_id in data) {
+                _mapInterface.createBusTerminal(data[stop_id]);
+            }
+        }); 
+        })(this);
+
+        // TODO Remove this and put a marker instead
         this.infoWindow = new google.maps.InfoWindow({map: this.map});
 
         // Try HTML5 geolocation.
