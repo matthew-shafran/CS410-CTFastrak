@@ -6,7 +6,7 @@
  *
  */
 var JSONInterface = {
-    API : 'http://whateverorigin.org/get?url=' + encodeURIComponent('http://65.213.12.244/realtimefeed/vehicle/vehiclepositions.json') + '&callback=?',
+    API : 'http://whateverorigin.org/get?url=' + encodeURIComponent('http://65.213.12.244/realtimefeed/externalfeed/trapezerealtimefeed.json') + '&callback=?',
     getBuses : function(callback) {
 
     },
@@ -16,6 +16,7 @@ var JSONInterface = {
     getData : function(callback) {
         (function(_JSONInterface) {
             $.getJSON(_JSONInterface.API, function(data) { 
+                console.log(data);
                 callback(_JSONInterface.format(data)); 
             }); 
         })(this);
@@ -89,15 +90,28 @@ var GTFSInterface = {
 var MapInterface = {
     buses : {},
     busterminals : {},
+    trips: {},
     updateMap : function() {
         (function(_mapInterface) {
             JSONInterface.getData(function(data) {
                 for (var i = 0; i < data.length; i++) {
-                    var bus = data[i];
-                    if (_mapInterface.buses.hasOwnProperty(bus.id)) {
-                        _mapInterface.updateBus(bus);
-                    } else {
-                        _mapInterface.createBus(bus);
+                    // Bus Object
+                    if (data[i].vehicle !== null) {
+                        var bus = data[i];
+                        if (_mapInterface.buses.hasOwnProperty(bus.id)) {
+                            _mapInterface.updateBus(bus);
+                        } else {
+                            _mapInterface.createBus(bus);
+                        }
+                    } 
+                    // Trip/Route Object
+                    else if (data[i].trip_update !== null) {
+                        var trip = data[i];
+                        if (_mapInterface.trips.hasOwnProperty(trip.id)) {
+                            _mapInterface.updateTrip(trip);
+                        } else {
+                            _mapInterface.createTrip(trip);
+                        }
                     }
                 }
             });
@@ -113,6 +127,13 @@ var MapInterface = {
         var marker = new google.maps.Marker({
             position: {lat: bus.vehicle.position.latitude, lng: bus.vehicle.position.longitude },
             map: this.map,
+            icon: {
+                url: 'img/largebus.png',
+                size: new google.maps.Size(560,182),
+                origin: new google.maps.Point(0,0),
+                anchor: new google.maps.Point(25,8),
+                scaledSize: new google.maps.Size(50,16)
+            },
             title: 'Bus #' + bus.id
         });
        
@@ -130,6 +151,14 @@ var MapInterface = {
     updateBus : function(bus) {
         var position = new google.maps.LatLng(bus.vehicle.position.latitude, bus.vehicle.position.longitude);
         this.buses[bus.id].setPosition(position);
+    },
+    createTrip : function(trip) {
+        // TODO figure out how to display this/what data to keep
+        this.trips[trip.id] = trip;
+    },
+    updateTrip : function(trip) {
+        // TODO figure out if updating is different from creating
+        this.trips[trip.id] = trip;
     },
     createBusTerminal : function() {
 
