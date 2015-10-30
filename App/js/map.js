@@ -60,7 +60,7 @@ function handleLocationError(browserHasGeolocation, infoWindow, pos) {
 
 //Creates a bus marker and its' tooltip.
 function createBus(latitude, longitude, busNumber){
-	var image = 'bus.jpg';
+	var image = 'img/bus.png';
 
 		
 	var marker = new google.maps.Marker({
