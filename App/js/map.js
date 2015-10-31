@@ -16,7 +16,6 @@ var JSONInterface = {
     getData : function(callback) {
         (function(_JSONInterface) {
             $.getJSON(_JSONInterface.API, function(data) { 
-                console.log(data);
                 callback(_JSONInterface.format(data)); 
             }); 
         })(this);
@@ -91,6 +90,7 @@ var MapInterface = {
     buses : {},
     busterminals : {},
     trips: {},
+    markers: [],
     updateMap : function() {
         (function(_mapInterface) {
             JSONInterface.getData(function(data) {
@@ -117,40 +117,63 @@ var MapInterface = {
             });
         })(this);
     },
-    handleLocationError : function(browserHasGeolocation, infoWindow, pos) {
-        infoWindow.setPosition(pos);
-        infoWindow.setContent(browserHasGeolocation ?
-                            'Error: The Geolocation service failed.' :
-                            'Error: Your browser doesn\'t support geolocation.');
+    createMarker : function(data) {
+        var marker = new google.maps.Marker({
+            position: data.position,
+            map: this.map,
+            icon: data.icon,
+            title: data.title 
+        });
+       
+        marker.infoWindow = new google.maps.InfoWindow({
+            content: data.content, 
+            pixelOffset: data.iconOffset,
+            maxWidth: 200
+        });
+      
+        (function(_mapInterface) {
+            marker.addListener('click', function() {
+                _mapInterface.closeMarkers();
+                marker.infoWindow.open(_mapInterface.map, marker);
+            });
+        })(this);
+
+        this.markers.push(marker);
+        return marker;
+    },
+    closeMarkers : function() {
+        for (var i = 0; i < this.markers.length; i++) {
+            this.markers[i].infoWindow.close();
+        }
+    },
+    handleLocationError : function(browserHasGeolocation) {
+        alert(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
     },
     createBus : function(bus) {
-        var marker = new google.maps.Marker({
-            position: {lat: bus.vehicle.position.latitude, lng: bus.vehicle.position.longitude },
-            map: this.map,
-            icon: {
-                url: 'img/largebus.png',
+
+        var busmarker  = {
+            position : {
+                lat : bus.vehicle.position.latitude,
+                lng : bus.vehicle.position.longitude
+            },
+            icon : {
+                url : 'img/largebus.png',
                 size: new google.maps.Size(560,182),
                 origin: new google.maps.Point(0,0),
                 anchor: new google.maps.Point(25,8),
                 scaledSize: new google.maps.Size(50,16)
             },
-            title: 'Bus #' + bus.id
-        });
-       
-        var infoWindow = new google.maps.InfoWindow({
-            content: 'Bus ' + bus.id,
-            maxWidth: 200
-        });
-      
-        marker.addListener('click', function() {
-            infoWindow.open(this.map, marker);
-        });
+            iconOffset : new google.maps.Size(-255,0),
+            title : 'Bus ' + bus.id,
+            content : 'Bus ' + bus.id,
+        }
 
-        this.buses[bus.id] = marker;
+        bus.marker = this.createMarker(busmarker);
+        this.buses[bus.id] = bus;
     },
     updateBus : function(bus) {
         var position = new google.maps.LatLng(bus.vehicle.position.latitude, bus.vehicle.position.longitude);
-        this.buses[bus.id].setPosition(position);
+        this.buses[bus.id].marker.setPosition(position);
     },
     createTrip : function(trip) {
         // TODO figure out how to display this/what data to keep
@@ -161,27 +184,25 @@ var MapInterface = {
         this.trips[trip.id] = trip;
     },
     createBusTerminal : function(bus_terminal) {
-        var marker = new google.maps.Marker({
-            position: {lat: parseFloat(bus_terminal.stop_lat), lng: parseFloat(bus_terminal.stop_lon) },
-            map: this.map,
-            icon: {
-                url: 'img/measle_blue.png',
+
+        var bus_terminal_marker  = {
+            position : {
+                lat : parseFloat(bus_terminal.stop_lat),
+                lng : parseFloat(bus_terminal.stop_lon)
+            },
+            icon : {
+                url : 'img/measle_blue.png',
                 size: new google.maps.Size(7,7),
                 origin: new google.maps.Point(0,0),
                 anchor: new google.maps.Point(3,3),
             },
+            iconOffset : new google.maps.Size(0,0),
+            title : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
+            content : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")"
+        }
 
-            title: bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")"
-        });
-       
-        var infoWindow = new google.maps.InfoWindow({
-            content:  bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
-            maxWidth: 200
-        });
-      
-        marker.addListener('click', function() {
-            infoWindow.open(this.map, marker);
-        });
+        bus_terminal.marker = this.createMarker(bus_terminal_marker);
+        this.busterminals[bus_terminal.stop_id] = bus_terminal;
     },
     updateBusTerminal : function() {
 
@@ -190,21 +211,34 @@ var MapInterface = {
         if (navigator.geolocation) {
             (function(_mapInterface){
                 navigator.geolocation.getCurrentPosition(function(position) {
-                    var pos = {
+                    var position = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
-                    };
+                    }
 
-                    _mapInterface.infoWindow.setPosition(pos);
-                    _mapInterface.infoWindow.setContent('Location found.');
-                    _mapInterface.map.setCenter(pos);
+                    var traveler_marker  = {
+                        position : position,
+                        icon : {
+                            url: 'img/traveler.png',
+                            size: new google.maps.Size(36,63),
+                            origin: new google.maps.Point(0,0),
+                            anchor: new google.maps.Point(5,25),
+                            scaledSize: new google.maps.Size(10,18)
+                        },
+                        title : 'You are here',
+                        content : 'You are here',
+                    }
+
+                    _mapInterface.createMarker(traveler_marker);
+
+                    _mapInterface.map.setCenter(position);
                 }, 
                 function() {
-                    _mapInterface.handleLocationError(true, _mapInterface.infoWindow, _mapInterface.map.getCenter());
+                    _mapInterface.handleLocationError(true);
                 });
             })(this);
         } else {
-            this.handleLocationError(false, this.infoWindow, this.map.getCenter());
+            this.handleLocationError(false);
         }
     },
     init: function() {
@@ -214,28 +248,21 @@ var MapInterface = {
             zoom: 15
         });
 
-
-        // Load the static bus stop locations
         (function(_mapInterface) {
-        $.getJSON('data/stops.json', function(data) { 
-            console.log(data);
-            _mapInterface.busterminals = data;
-            for (var stop_id in data) {
-                _mapInterface.createBusTerminal(data[stop_id]);
-            }
-        }); 
+            _mapInterface.map.addListener('click', function() { _mapInterface.closeMarkers(); });
+            _mapInterface.updateInterval = setInterval(function() { _mapInterface.updateMap(); }, 30000);
+            
+            // Load the static bus stop locations
+            $.getJSON('data/stops.json', function(data) { 
+                for (var stop_id in data) {
+                    _mapInterface.createBusTerminal(data[stop_id]);
+                }
+            }); 
         })(this);
-
-        // TODO Remove this and put a marker instead
-        this.infoWindow = new google.maps.InfoWindow({map: this.map});
 
         // Try HTML5 geolocation.
         this.centerMap();    
         this.updateMap();
-        
-        (function(_mapInterface) {
-            _mapInterface.updateInterval = setInterval(function() { _mapInterface.updateMap(); }, 30000);
-        })(this);
     }
 };
 
