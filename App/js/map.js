@@ -1,126 +1,183 @@
-var map;
-function initMap() {
-  map = new google.maps.Map(document.getElementById('map'), {
-    center: {lat: 41.6750, lng: -72.7872},
-    zoom: 15
-  });
-  
-  var infoWindow = new google.maps.InfoWindow({map: map});
+/* CTFastrak project */
 
-  // Try HTML5 geolocation.
-  if (navigator.geolocation) {
-    navigator.geolocation.getCurrentPosition(function(position) {
-      var pos = {
-        lat: position.coords.latitude,
-        lng: position.coords.longitude
-      };
+/* JSONInterface
+ * Has functions for getting JSON data from the CTFastrak JSON API.
+ *
+ *
+ */
+var JSONInterface = {
+    API : 'http://whateverorigin.org/get?url=' + encodeURIComponent('http://65.213.12.244/realtimefeed/vehicle/vehiclepositions.json') + '&callback=?',
+    getBuses : function(callback) {
 
-      infoWindow.setPosition(pos);
-      infoWindow.setContent('Location found.');
-      map.setCenter(pos);
-    }, function() {
-      handleLocationError(true, infoWindow, map.getCenter());
-    });
-  } else {
-    // Browser doesn't support Geolocation
-    handleLocationError(false, infoWindow, map.getCenter());
-  }
-  
-  
-  //Testing create functions
-  createBus(41.6, -72.7872, 1);
-  createBusStop(41.7, -72.7872, 2);
-  
-  $.ajax({
-  	type: "GET",
-  	url: "http://gisdata.hartford.gov/datasets/453fb4c1dff74efdbdb46fadfd257e28_0.geojson",
-  	success: function(dataset){
-  		console.log(dataset);
-  		for(var i = 0; i < dataset.features.length; i++){
-  			var latitude = dataset.features[i].properties.latitude;
-  			var longitude = dataset.features[i].properties.longitude;
-  			var id = dataset.features[i].properties.id;
-  			createBus(latitude, longitude, id);
-  		}
- 		 },
- 	error:function(){
- 		console.log("ERROR");
- 	}
- });  
-  
-}
+    },
+    getBusTerminals : function(callback) {
 
-//If the browser doesn't support GeoLocation, output an error.
-function handleLocationError(browserHasGeolocation, infoWindow, pos) {
-	infoWindow.setPosition(pos);
-  	infoWindow.setContent(browserHasGeolocation ?
-                        'Error: The Geolocation service failed.' :
-                        'Error: Your browser doesn\'t support geolocation.');
-}
+    },
+    getData : function(callback) {
+        (function(_JSONInterface) {
+            $.getJSON(_JSONInterface.API, function(data) { 
+                callback(_JSONInterface.format(data)); 
+            }); 
+        })(this);
+    },
+    format : function(data) {
+        // Format the JSON data to return an array of buses;
+        return data.contents.entity;
+    },
+    init: function() {
+        this.foo = '';
+        return this;
+    }
+}.init();
 
-//Creates a bus marker and its' tooltip.
-function createBus(latitude, longitude, busNumber){
-	var image = 'img/bus.png';
 
-		
-	var marker = new google.maps.Marker({
-    	position: {lat: latitude, lng: longitude },
-    	map: map,
-    	title: 'Bus #' + busNumber,
-    	icon: image
-    	
-  	});
-  	var contentString = '<table><tr><td><b>Bus #:</b></td><td>' + busNumber + '</td></tr>'
-  						+ '<tr><td><b>Latitude:</b></td><td>' + latitude + '</td></tr>'
-  						+ '<tr><td><b>Longitude:</b></td><td>' + longitude + '</td></tr></table>';
-   
-   	var infoWindow = new google.maps.InfoWindow({
-    	content: contentString,
-    	maxWidth: 200
-  	});
-  
-  	marker.addListener('click', function() {
-  		infoWindow.open(map,marker);
-  	});
-}
+/* GTFSInterface
+ * Has functions for getting JSON data from the GISData wrapper of the GTFS feed from the CTFastrak GTFS API.
+ *
+ *
+ */
+var GTFSInterface = {
+    API : 'http://gisdata.hartford.gov/datasets/453fb4c1dff74efdbdb46fadfd257e28_0.geojson',
+    getBuses : function(callback) {
 
-//Creates a bus stop marker and its' tooltip.
-function createBusStop(latitude, longitude, busStopNumber){
-	var marker = new google.maps.Marker({
-    	position: {lat: latitude, lng: longitude },
-    	map: map,
-    	title: 'Bus Stop #' + busStopNumber
-  	});
-  	
-  	var contentString = 'This is a test bus stop tooltip';
-   
-   	var infoWindow = new google.maps.InfoWindow({
-    	content: contentString,
-    	maxWidth: 200
-  	});
-  
-  	marker.addListener('click', function() {
-  		infoWindow.open(map,marker);
-  	});
-}
 
-//Not done yet
-function centerMap(){
-	if (navigator.geolocation) {
-    	navigator.geolocation.getCurrentPosition(function(position) {
-    	var pos = {
-    		lat: position.coords.latitude,
-        	lng: position.coords.longitude
-      	};
+    },
+    getBusTerminals : function(callback) {
 
-      	infoWindow.setPosition(pos);
-      	infoWindow.setContent('Location found.');
-      	map.setCenter(pos);
-    	}, function() {
-      	handleLocationError(true, infoWindow, map.getCenter());
-    	});
-  	} else {
-    	// Browser doesn't support Geolocation
-    	handleLocationError(false, infoWindow, map.getCenter());
-  	}
-}
+    },
+    getData : function(callback) {
+        (function(_GTFSInterface) {
+            $.getJSON(_GTFSInterface.API, function(data) { 
+                callback(_GTFSInterface.format(data)); 
+            }); 
+        })(this);
+    },
+    format : function(data) {
+        // Format the GTFS data to return an array of buses
+        var buses = [];
+        for (var i = 0; i < data.features.length; i++) {
+            var bus = data.features[i];
+            buses.push({
+                position : {
+                    latitude : bus.properties.latitude,
+                    longitude : bus.properties.longitude,
+                },
+                timestamp : bus.properties.timestamp ,
+                trip : {
+                    route_id : bus.properties.route_id,
+                    start_date : bus.properties.state_date,
+                    trip_id : bus.properties.trip_id
+                },
+                vehicle : {
+                    id : bus.properties.id,
+                    label : bus.properties.label
+                }
+            });
+        }
+        return buses;
+    },
+    init: function() {
+        this.foo = '';
+        return this;
+    }
+
+}.init();
+
+/* MapInterface
+ * Has functions for manipulating the Google Maps interface object.
+ *
+ *
+ */
+var MapInterface = {
+    buses : {},
+    busterminals : {},
+    updateMap : function() {
+        (function(_mapInterface) {
+            JSONInterface.getData(function(data) {
+                for (var i = 0; i < data.length; i++) {
+                    var bus = data[i];
+                    if (_mapInterface.buses.hasOwnProperty(bus.id)) {
+                        _mapInterface.updateBus(bus);
+                    } else {
+                        _mapInterface.createBus(bus);
+                    }
+                }
+            });
+        })(this);
+    },
+    handleLocationError : function(browserHasGeolocation, infoWindow, pos) {
+        infoWindow.setPosition(pos);
+        infoWindow.setContent(browserHasGeolocation ?
+                            'Error: The Geolocation service failed.' :
+                            'Error: Your browser doesn\'t support geolocation.');
+    },
+    createBus : function(bus) {
+        var marker = new google.maps.Marker({
+            position: {lat: bus.vehicle.position.latitude, lng: bus.vehicle.position.longitude },
+            map: this.map,
+            title: 'Bus #' + bus.id
+        });
+       
+        var infoWindow = new google.maps.InfoWindow({
+            content: 'Bus ' + bus.id,
+            maxWidth: 200
+        });
+      
+        marker.addListener('click', function() {
+            infoWindow.open(this.map, marker);
+        });
+
+        this.buses[bus.id] = marker;
+    },
+    updateBus : function(bus) {
+        var position = new google.maps.LatLng(bus.vehicle.position.latitude, bus.vehicle.position.longitude);
+        this.buses[bus.id].setPosition(position);
+    },
+    createBusTerminal : function() {
+
+    },
+    updateBusTerminal : function() {
+
+    },
+    centerMap : function() {
+        if (navigator.geolocation) {
+            (function(_mapInterface){
+                navigator.geolocation.getCurrentPosition(function(position) {
+                    var pos = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude
+                    };
+
+                    _mapInterface.infoWindow.setPosition(pos);
+                    _mapInterface.infoWindow.setContent('Location found.');
+                    _mapInterface.map.setCenter(pos);
+                }, 
+                function() {
+                    _mapInterface.handleLocationError(true, _mapInterface.infoWindow, _mapInterface.map.getCenter());
+                });
+            })(this);
+        } else {
+            this.handleLocationError(false, this.infoWindow, this.map.getCenter());
+        }
+    },
+    init: function() {
+        this.map = new google.maps.Map(document.getElementById('map'), {
+            //TODO rewrite these hard-coded coordinates
+            center: {lat: 41.6750, lng: -72.7872},
+            zoom: 15
+        });
+
+        this.infoWindow = new google.maps.InfoWindow({map: this.map});
+
+        // Try HTML5 geolocation.
+        this.centerMap();    
+        this.updateMap();
+        
+        (function(_mapInterface) {
+            _mapInterface.updateInterval = setInterval(function() { _mapInterface.updateMap(); }, 30000);
+        })(this);
+    }
+};
+
+// Let Google Maps API know how to initialize.
+function initMap() { MapInterface.init(); };
