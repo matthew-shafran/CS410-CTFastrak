@@ -3,24 +3,160 @@
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>CTFastrak CS410</title>
-    <style>
-      html, body {
-        height: 100%;
-        margin: 0;
-        padding: 0;
-      }
-      #map {
-        height: 100%;
-      }
-    </style>
+        
+        
+        
+    	<style>
+      		html, body {
+        	height: 100%;
+        	margin: 0;
+        	padding: 0;
+      		}
+      		#map {
+        		height: 100%;
+      		}
+      		
+      		.controls {
+			  margin-top: 10px;
+			  border: 1px solid transparent;
+			  border-radius: 2px 0 0 2px;
+			  box-sizing: border-box;
+			  -moz-box-sizing: border-box;
+			  height: 32px;
+			  outline: none;
+			  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+			}
+
+			#origin-input,
+			#destination-input {
+			  background-color: #fff;
+			  font-family: Roboto;
+			  font-size: 15px;
+			  font-weight: 300;
+			  margin-left: 12px;
+			  padding: 0 11px 0 13px;
+			  text-overflow: ellipsis;
+			  width: 200px;
+			}
+
+			#origin-input:focus,
+			#destination-input:focus {
+			  border-color: #4d90fe;
+			}
+    	</style>
   </head>
-  <body>
-  
-    <div id="map"></div>
-		<script src="//code.jquery.com/jquery-2.1.4.min.js"></script>
+  <body onload="initSearch()">
+    	<div id="map">
+    	
+    	</div>
+    	
+		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="//cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>        
-        <script src="//maps.googleapis.com/maps/api/js?key=AIzaSyB1lGcwF1Oe-mDyhYW9oWWscAYoc5T-c7A&callback=MapInterface.init" async defer></script>
+        <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB1lGcwF1Oe-mDyhYW9oWWscAYoc5T-c7A&libraries=places&callback=MapInterface.init" async defer></script>
         <script src="js/map.js"></script>
+           
+    	<input id="origin-input" class="controls" type="text"
+        	placeholder="Enter an origin location">
+
+    	<input id="destination-input" class="controls" type="text"
+        	placeholder="Enter a destination location">
+        	
+        	
+        <script type="text/javascript">
+         function initSearch(){
+        	var origin_place_id = null;
+  			var destination_place_id = null;
+  			var travel_mode = google.maps.TravelMode.WALKING;
+  			var directionsService = new google.maps.DirectionsService;
+		  	var directionsDisplay = new google.maps.DirectionsRenderer;
+		  	var map = MapInterface.map;
+		  	directionsDisplay.setMap(map);
+
+			var origin_input = document.getElementById('origin-input');
+			var destination_input = document.getElementById('destination-input');
+		  	var modes = document.getElementById('mode-selector');
+	
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(origin_input);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(destination_input);
+
+		  	var origin_autocomplete = new google.maps.places.Autocomplete(origin_input);
+		 	origin_autocomplete.bindTo('bounds', map);
+			var destination_autocomplete =
+			new google.maps.places.Autocomplete(destination_input);
+		  destination_autocomplete.bindTo('bounds', map);
+
+		  function expandViewportToFitPlace(map, place) {
+			if (place.geometry.viewport) {
+			  map.fitBounds(place.geometry.viewport);
+			} else {
+			  map.setCenter(place.geometry.location);
+			  map.setZoom(17);
+			}
+		  }
+
+		  origin_autocomplete.addListener('place_changed', function() {
+			var place = origin_autocomplete.getPlace();
+			if (!place.geometry) {
+			  window.alert("Autocomplete's returned place contains no geometry");
+			  return;
+			}
+			expandViewportToFitPlace(map, place);
+
+			// If the place has a geometry, store its place ID and route if we have
+			// the other place ID
+			origin_place_id = place.place_id;
+			route(origin_place_id, destination_place_id, travel_mode,
+				  directionsService, directionsDisplay);
+		  });
+
+		  destination_autocomplete.addListener('place_changed', function() {
+			var place = destination_autocomplete.getPlace();
+			if (!place.geometry) {
+			  window.alert("Autocomplete's returned place contains no geometry");
+			  return;
+			}
+			expandViewportToFitPlace(map, place);
+
+			// If the place has a geometry, store its place ID and route if we have
+			// the other place ID
+			destination_place_id = place.place_id;
+			route(origin_place_id, destination_place_id, travel_mode,
+				  directionsService, directionsDisplay);
+		  });
+
+		  function route(origin_place_id, destination_place_id, travel_mode,
+						 directionsService, directionsDisplay) {
+			if (!origin_place_id || !destination_place_id) {
+			  return;
+			}
+			directionsService.route({
+			  origin: {'placeId': origin_place_id},
+			  destination: {'placeId': destination_place_id},
+			  travelMode: travel_mode
+			}, function(response, status) {
+			  if (status === google.maps.DirectionsStatus.OK) {
+				directionsDisplay.setDirections(response);
+				convertAddress(document.getElementById("origin-input").value);
+			  } else {
+				window.alert('Directions request failed due to ' + status);
+			  }
+    	});
+    	}
+  	}
+  	
+  	function convertAddress( address ) {
+  		var geocoder = new google.maps.Geocoder();
+	  	geocoder.geocode( { 
+			'address' : address 
+	  	}, function(results, status) {
+				if ( status == google.maps.GeocoderStatus.OK ) {
+		  			alert(results[0].geometry.location.lat() + " and " + results[0].geometry.location.lng());
+				} else alert("Geocode failed, status: "+status);
+	  		});
+	}
+</script>
+            
+        <button onclick="centerMap()">Center Map</button>
     </body>
 </html>
 
