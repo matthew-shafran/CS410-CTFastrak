@@ -6,7 +6,7 @@
  *
  */
 var JSONInterface = {
-    API : 'http://whateverorigin.org/get?url=' + encodeURIComponent('http://65.213.12.244/realtimefeed/externalfeed/trapezerealtimefeed.json') + '&callback=?',
+    API : 'http://65.213.12.244/realtimefeed/externalfeed/trapezerealtimefeed.json',
     getBuses : function(callback) {
 
     },
@@ -22,7 +22,7 @@ var JSONInterface = {
     },
     format : function(data) {
         // Format the JSON data to return an array of buses;
-        return data.contents.entity;
+        return data.entity;
     },
     init: function() {
         this.foo = '';
@@ -36,18 +36,61 @@ var JSONInterface = {
  *
  */
 var GTFSInterface = {
-    API : 'http://gisdata.hartford.gov/datasets/453fb4c1dff74efdbdb46fadfd257e28_0.geojson',
-    getBuses : function(callback) {
-
-    },
-    getBusTerminals : function(callback) {
-
-    },
+    data : {},
     getData : function(callback) {
         (function(_GTFSInterface) {
-            $.getJSON(_GTFSInterface.API, function(data) { 
-                callback(_GTFSInterface.format(data)); 
-            }); 
+            d3.csv("data/csv/agency.txt", function(data) { 
+                _GTFSInterface.data.agency = {}
+                for (var i = 0; i < data.length; i++) {
+                    _GTFSInterface.data.agency[data[i].agency_name.substr(data[i].agency_name.indexOf("- ") + 2)] = data[i];
+                }
+            });
+            d3.csv("data/csv/calendar_dates.txt", function(data) { 
+                _GTFSInterface.data.calendar_dates = data;
+            
+            });
+            d3.csv("data/csv/calendar.txt", function(data) { 
+                _GTFSInterface.data.calendar = {}
+                for (var i = 0; i < data.length; i++) {
+                    _GTFSInterface.data.calendar[data[i].service_id] = data[i];
+                }
+            });
+            d3.csv("data/csv/routes.txt", function(data) { 
+                _GTFSInterface.data.routes = {}
+                for (var i = 0; i < data.length; i++) {
+                    _GTFSInterface.data.routes[data[i].route_id] = data[i];
+                }
+            });
+            d3.csv("data/csv/shapes.txt", function(data) { 
+                _GTFSInterface.data.shapes = {}
+                for (var i = 0; i < data.length; i++) {
+                    if (!(_GTFSInterface.data.shapes.hasOwnProperty(data[i].shape_id))) {
+                        _GTFSInterface.data.shapes[data[i].shape_id] = [];
+                    } 
+                    _GTFSInterface.data.shapes[data[i].shape_id].push(data[i]);
+                }
+            });
+            d3.csv("data/csv/stop_times.txt", function(data) { 
+                _GTFSInterface.data.stop_times = {}
+                for (var i = 0; i < data.length; i++) {
+                    if (!(_GTFSInterface.data.stop_times.hasOwnProperty(data[i].trip_id))) {
+                        _GTFSInterface.data.stop_times[data[i].trip_id] = {}
+                    }
+                    _GTFSInterface.data.stop_times[data[i].trip_id][data[i].stop_id] = data[i];
+                }
+            });
+            d3.csv("data/csv/stops.txt", function(data) { 
+                _GTFSInterface.data.stops = {}
+                for (var i = 0; i < data.length; i++) {
+                    _GTFSInterface.data.stops[data[i].stop_id] = data[i];
+                }
+            });
+            d3.csv("data/csv/trips.txt", function(data) { 
+                _GTFSInterface.data.trips = {}
+                for (var i = 0; i < data.length; i++) {
+                    _GTFSInterface.data.trips[data[i].trip_id] = data[i];
+                }
+            });
         })(this);
     },
     format : function(data) {
@@ -132,10 +175,11 @@ var MapInterface = {
         });
       
         (function(_mapInterface) {
-            marker.addListener('click', function() {
+            marker.addListener('mouseover', function() {
                 _mapInterface.closeMarkers();
                 marker.infoWindow.open(_mapInterface.map, marker);
             });
+            marker.addListener('click', data.callback);
         })(this);
 
         this.markers.push(marker);
@@ -149,27 +193,53 @@ var MapInterface = {
     handleLocationError : function(browserHasGeolocation) {
         alert(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
     },
-    createBus : function(bus) {
-
-        var busmarker  = {
-            position : {
-                lat : bus.vehicle.position.latitude,
-                lng : bus.vehicle.position.longitude
-            },
-            icon : {
-                url : 'img/largebus.png',
-                size: new google.maps.Size(560,182),
-                origin: new google.maps.Point(0,0),
-                anchor: new google.maps.Point(25,8),
-                scaledSize: new google.maps.Size(50,16)
-            },
-            iconOffset : new google.maps.Size(-255,0),
-            title : 'Bus ' + bus.id,
-            content : 'Bus ' + bus.id,
+    drawRoute : function(route) {
+        var routeCoordinates = [];
+        for (var i = 0; i < route.length; i++) {
+            routeCoordinates.push({
+                lat: parseFloat(route[i].shape_pt_lat),
+                lng: parseFloat(route[i].shape_pt_lon)
+            });
         }
+        var routePath = new google.maps.Polyline({
+            path: routeCoordinates,
+            geodesic: true,
+            strokeColor: '#FF0000',
+            strokeOpacity: 1.0,
+            strokeWeight: 2
+        });
+        routePath.setMap(MapInterface.map);
+    },
+    createBus : function(bus) {
+        (function(_mapInterface) {
+            var busmarker  = {
+                position : {
+                    lat : bus.vehicle.position.latitude,
+                    lng : bus.vehicle.position.longitude
+                },
+                icon : {
+                    url : 'img/largebus.png',
+                    size: new google.maps.Size(560,182),
+                    origin: new google.maps.Point(0,0),
+                    anchor: new google.maps.Point(25,8),
+                    scaledSize: new google.maps.Size(50,16)
+                },
+                iconOffset : new google.maps.Size(-255,0),
+                title : 'Bus ' + bus.id,
+                content : 'Bus ' + bus.id,
+                callback : function() { 
+                    var color = "#"+GTFSInterface.data.routes[bus.vehicle.trip.route_id].route_color;
+                    var trip_id = bus.vehicle.trip.trip_id;
+                    var shape_id = GTFSInterface.data.trips[trip_id].shape_id;
+                    var route = GTFSInterface.data.shapes[shape_id];
+                        console.log(trip_id, shape_id, _mapInterface);
+                    _mapInterface.drawRoute(route); 
+                }
+            }
 
-        bus.marker = this.createMarker(busmarker);
-        this.buses[bus.id] = bus;
+            bus.marker = _mapInterface.createMarker(busmarker);
+            _mapInterface.buses[bus.id] = bus;
+        })(this);
     },
     updateBus : function(bus) {
         var position = new google.maps.LatLng(bus.vehicle.position.latitude, bus.vehicle.position.longitude);
@@ -225,6 +295,7 @@ var MapInterface = {
                             anchor: new google.maps.Point(5,25),
                             scaledSize: new google.maps.Size(10,18)
                         },
+                        iconOffset : new google.maps.Size(-13,0),
                         title : 'You are here',
                         content : 'You are here',
                     }
@@ -252,10 +323,14 @@ var MapInterface = {
             _mapInterface.map.addListener('click', function() { _mapInterface.closeMarkers(); });
             _mapInterface.updateInterval = setInterval(function() { _mapInterface.updateMap(); }, 30000);
             
+            // Load the GTFS static data
+            GTFSInterface.getData(function() { });
+            
+            
             // Load the static bus stop locations
             $.getJSON('data/stops.json', function(data) { 
                 for (var stop_id in data) {
-                    _mapInterface.createBusTerminal(data[stop_id]);
+                    //_mapInterface.createBusTerminal(data[stop_id]);
                 }
             }); 
         })(this);
@@ -266,5 +341,30 @@ var MapInterface = {
     }
 };
 
-// Let Google Maps API know how to initialize.
-function initMap() { MapInterface.init(); };
+
+function testShapes() {
+    d3.csv("googleha_transit/shapes.txt", function(data) { 
+        var sequenceNum = 0;
+        var shapeCoordinates = [];
+        for (var i = 0; i < data.length; i++) {
+            if (i != 0 && data[i].shape_id !== data[i-1].shape_id) {
+                console.log("new sequence", shapeCoordinates);
+                var shapePath = new google.maps.Polyline({
+                    path: shapeCoordinates,
+                    geodesic: true,
+                    strokeColor: '#FF0000',
+                    strokeOpacity: 1.0,
+                    strokeWeight: 2
+                });
+                shapePath.setMap(MapInterface.map);
+                shapeCoordinates = []; 
+                break;
+            }
+            shapeCoordinates.push({
+                lat: parseFloat(data[i].shape_pt_lat),
+                lng: parseFloat(data[i].shape_pt_lon)
+            });
+            sequenceNum = data[i].shape_pt_sequence;
+        }
+    });
+}
