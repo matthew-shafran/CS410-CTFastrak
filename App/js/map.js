@@ -7,12 +7,6 @@
  */
 var JSONInterface = {
     API : 'http://65.213.12.244/realtimefeed/externalfeed/trapezerealtimefeed.json',
-    getBuses : function(callback) {
-
-    },
-    getBusTerminals : function(callback) {
-
-    },
     getData : function(callback) {
         (function(_JSONInterface) {
             $.getJSON(_JSONInterface.API, function(data) { 
@@ -24,10 +18,7 @@ var JSONInterface = {
         // Format the JSON data to return an array of buses;
         return data.entity;
     },
-    init: function() {
-        this.foo = '';
-        return this;
-    }
+    init: function() { return this; }
 }.init();
 
 /* GTFSInterface
@@ -36,92 +27,48 @@ var JSONInterface = {
  *
  */
 var GTFSInterface = {
-    data : {},
+    data : { agency : {}, calendar_dates : {}, calendar : {}, routes : {}, shapes : {}, stop_times : {}, stops : {}, trips : {}},
     getData : function(callback) {
-        (function(_GTFSInterface) {
-            d3.csv("data/csv/agency.txt", function(data) { 
-                _GTFSInterface.data.agency = {}
-                for (var i = 0; i < data.length; i++) {
-                    _GTFSInterface.data.agency[data[i].agency_name.substr(data[i].agency_name.indexOf("- ") + 2)] = data[i];
-                }
-            });
-            d3.csv("data/csv/calendar_dates.txt", function(data) { 
-                _GTFSInterface.data.calendar_dates = data;
-            
-            });
-            d3.csv("data/csv/calendar.txt", function(data) { 
-                _GTFSInterface.data.calendar = {}
-                for (var i = 0; i < data.length; i++) {
-                    _GTFSInterface.data.calendar[data[i].service_id] = data[i];
-                }
-            });
-            d3.csv("data/csv/routes.txt", function(data) { 
-                _GTFSInterface.data.routes = {}
-                for (var i = 0; i < data.length; i++) {
-                    _GTFSInterface.data.routes[data[i].route_id] = data[i];
-                }
-            });
-            d3.csv("data/csv/shapes.txt", function(data) { 
-                _GTFSInterface.data.shapes = {}
-                for (var i = 0; i < data.length; i++) {
-                    if (!(_GTFSInterface.data.shapes.hasOwnProperty(data[i].shape_id))) {
-                        _GTFSInterface.data.shapes[data[i].shape_id] = [];
-                    } 
-                    _GTFSInterface.data.shapes[data[i].shape_id].push(data[i]);
-                }
-            });
-            d3.csv("data/csv/stop_times.txt", function(data) { 
-                _GTFSInterface.data.stop_times = {}
-                for (var i = 0; i < data.length; i++) {
-                    if (!(_GTFSInterface.data.stop_times.hasOwnProperty(data[i].trip_id))) {
-                        _GTFSInterface.data.stop_times[data[i].trip_id] = {}
-                    }
-                    _GTFSInterface.data.stop_times[data[i].trip_id][data[i].stop_id] = data[i];
-                }
-            });
-            d3.csv("data/csv/stops.txt", function(data) { 
-                _GTFSInterface.data.stops = {}
-                for (var i = 0; i < data.length; i++) {
-                    _GTFSInterface.data.stops[data[i].stop_id] = data[i];
-                }
-            });
-            d3.csv("data/csv/trips.txt", function(data) { 
-                _GTFSInterface.data.trips = {}
-                for (var i = 0; i < data.length; i++) {
-                    _GTFSInterface.data.trips[data[i].trip_id] = data[i];
-                }
-            });
-        })(this);
-    },
-    format : function(data) {
-        // Format the GTFS data to return an array of buses
-        var buses = [];
-        for (var i = 0; i < data.features.length; i++) {
-            var bus = data.features[i];
-            buses.push({
-                position : {
-                    latitude : bus.properties.latitude,
-                    longitude : bus.properties.longitude,
-                },
-                timestamp : bus.properties.timestamp ,
-                trip : {
-                    route_id : bus.properties.route_id,
-                    start_date : bus.properties.state_date,
-                    trip_id : bus.properties.trip_id
-                },
-                vehicle : {
-                    id : bus.properties.id,
-                    label : bus.properties.label
-                }
-            });
-        }
-        return buses;
-    },
-    init: function() {
-        this.foo = '';
-        return this;
-    }
 
+        (function(_GTFSInterface) {
+            // Queue up all of the GTFS data to be loaded at once before being processed
+            queue()
+                .defer(d3.csv, "data/csv/agency.txt")
+                .defer(d3.csv, "data/csv/calendar_dates.txt")
+                .defer(d3.csv, "data/csv/calendar.txt")
+                .defer(d3.csv, "data/csv/routes.txt")
+                .defer(d3.csv, "data/csv/shapes.txt")
+                .defer(d3.csv, "data/csv/stop_times.txt")
+                .defer(d3.csv, "data/csv/stops.txt")
+                .defer(d3.csv, "data/csv/trips.txt")
+                .await(function(error, agency, calendar_dates, calendar, routes, shapes, stop_times, stops, trips) {
+                    if (error) { console.log(error); return; }
+
+                    _GTFSInterface.data.calendar_dates = calendar_dates;
+                    for (var i = 0; i < agency.length; i++) { _GTFSInterface.data.agency[agency[i].agency_name.substr(agency[i].agency_name.indexOf("- ") + 2)] = agency[i]; }
+                    for (var i = 0; i < calendar.length; i++) { _GTFSInterface.data.calendar[calendar[i].service_id] = calendar[i]; }
+                    for (var i = 0; i < routes.length; i++) { _GTFSInterface.data.routes[routes[i].route_id] = routes[i]; }
+                    for (var i = 0; i < shapes.length; i++) {
+                        if (!(_GTFSInterface.data.shapes.hasOwnProperty(shapes[i].shape_id))) {
+                            _GTFSInterface.data.shapes[shapes[i].shape_id] = [];
+                        } 
+                        _GTFSInterface.data.shapes[shapes[i].shape_id].push(shapes[i]);
+                    }
+                    for (var i = 0; i < stop_times.length; i++) {
+                        if (!(_GTFSInterface.data.stop_times.hasOwnProperty(stop_times[i].trip_id))) {
+                            _GTFSInterface.data.stop_times[stop_times[i].trip_id] = {}
+                        }
+                        _GTFSInterface.data.stop_times[stop_times[i].trip_id][stop_times[i].stop_id] = stop_times[i];
+                    }
+                    for (var i = 0; i < stops.length; i++) { _GTFSInterface.data.stops[stops[i].stop_id] = stops[i]; }
+                    for (var i = 0; i < trips.length; i++) { _GTFSInterface.data.trips[trips[i].trip_id] = trips[i]; }
+
+                    callback(_GTFSInterface.data);
+                });
+        })(this);
+
+    },
+    init: function() { return this; }
 }.init();
 
 /* MapInterface
@@ -193,7 +140,15 @@ var MapInterface = {
     handleLocationError : function(browserHasGeolocation) {
         alert(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
     },
-    drawRoute : function(route) {
+    drawRoute : function(route, stops) {
+        if (MapInterface.route) MapInterface.route.setMap(null);
+        if (MapInterface.routestops) {
+            for (var i = 0; i < MapInterface.routestops.length; i++) {
+                MapInterface.busterminals[MapInterface.routestops[i].stop_id].marker.setVisible(false);
+            }
+        }
+
+        // Draw route shape
         var routeCoordinates = [];
         for (var i = 0; i < route.length; i++) {
             routeCoordinates.push({
@@ -204,11 +159,21 @@ var MapInterface = {
         var routePath = new google.maps.Polyline({
             path: routeCoordinates,
             geodesic: true,
-            strokeColor: '#FF0000',
-            strokeOpacity: 1.0,
-            strokeWeight: 2
+            strokeColor: route.color,
+            strokeOpacity: 0.5,
+            strokeWeight: 4
         });
+        MapInterface.route = routePath;
         routePath.setMap(MapInterface.map);
+        
+        // Draw stops measles
+        MapInterface.routestops = stops;
+        for (var i = 0; i < stops.length; i++) {
+            var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
+            newicon.fillColor = route.color;
+            MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
+            MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
+        }
     },
     createBus : function(bus) {
         (function(_mapInterface) {
@@ -227,16 +192,18 @@ var MapInterface = {
                 iconOffset : new google.maps.Size(-255,0),
                 title : 'Bus ' + bus.id,
                 content : 'Bus ' + bus.id,
-                callback : function() { 
+                
+                // Callback function for when clicking on this marker
+                callback : function() {
                     var color = "#"+GTFSInterface.data.routes[bus.vehicle.trip.route_id].route_color;
                     var trip_id = bus.vehicle.trip.trip_id;
                     var shape_id = GTFSInterface.data.trips[trip_id].shape_id;
-                    var route = GTFSInterface.data.shapes[shape_id];
-                        console.log(trip_id, shape_id, _mapInterface);
-                    _mapInterface.drawRoute(route); 
+                    var shape = GTFSInterface.data.shapes[shape_id];
+                    shape.color = color;
+                    var stops = _mapInterface.trips[trip_id].trip_update.stop_time_update;
+                    _mapInterface.drawRoute(shape, stops); 
                 }
             }
-
             bus.marker = _mapInterface.createMarker(busmarker);
             _mapInterface.buses[bus.id] = bus;
         })(this);
@@ -254,24 +221,32 @@ var MapInterface = {
         this.trips[trip.id] = trip;
     },
     createBusTerminal : function(bus_terminal) {
-
         var bus_terminal_marker  = {
             position : {
                 lat : parseFloat(bus_terminal.stop_lat),
                 lng : parseFloat(bus_terminal.stop_lon)
             },
-            icon : {
+            icon : /*{
                 url : 'img/measle_blue.png',
                 size: new google.maps.Size(7,7),
                 origin: new google.maps.Point(0,0),
                 anchor: new google.maps.Point(3,3),
+            },*/
+            {
+                path: google.maps.SymbolPath.CIRCLE,
+                scale: 4,
+                fillColor: '#000000',
+                fillOpacity: 1.0,
+                strokeWeight: 1,
+                strokeOpacity: 0.25
             },
             iconOffset : new google.maps.Size(0,0),
             title : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
-            content : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")"
+            content : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
+            callback : function() {}
         }
-
         bus_terminal.marker = this.createMarker(bus_terminal_marker);
+        bus_terminal.marker.setVisible(false);
         this.busterminals[bus_terminal.stop_id] = bus_terminal;
     },
     updateBusTerminal : function() {
@@ -318,21 +293,18 @@ var MapInterface = {
             center: {lat: 41.6750, lng: -72.7872},
             zoom: 15
         });
+            
 
         (function(_mapInterface) {
             _mapInterface.map.addListener('click', function() { _mapInterface.closeMarkers(); });
             _mapInterface.updateInterval = setInterval(function() { _mapInterface.updateMap(); }, 30000);
-            
+
             // Load the GTFS static data
-            GTFSInterface.getData(function() { });
-            
-            
-            // Load the static bus stop locations
-            $.getJSON('data/stops.json', function(data) { 
-                for (var stop_id in data) {
-                    //_mapInterface.createBusTerminal(data[stop_id]);
+            GTFSInterface.getData(function(data) { 
+                for (var stop_id in data.stops) {
+                    _mapInterface.createBusTerminal(data.stops[stop_id]);
                 }
-            }); 
+            });
         })(this);
 
         // Try HTML5 geolocation.
@@ -348,7 +320,6 @@ function testShapes() {
         var shapeCoordinates = [];
         for (var i = 0; i < data.length; i++) {
             if (i != 0 && data[i].shape_id !== data[i-1].shape_id) {
-                console.log("new sequence", shapeCoordinates);
                 var shapePath = new google.maps.Polyline({
                     path: shapeCoordinates,
                     geodesic: true,
