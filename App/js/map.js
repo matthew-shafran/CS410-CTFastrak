@@ -221,33 +221,35 @@ var MapInterface = {
         this.trips[trip.id] = trip;
     },
     createBusTerminal : function(bus_terminal) {
-        var bus_terminal_marker  = {
-            position : {
-                lat : parseFloat(bus_terminal.stop_lat),
-                lng : parseFloat(bus_terminal.stop_lon)
-            },
-            icon : /*{
-                url : 'img/measle_blue.png',
-                size: new google.maps.Size(7,7),
-                origin: new google.maps.Point(0,0),
-                anchor: new google.maps.Point(3,3),
-            },*/
-            {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 4,
-                fillColor: '#000000',
-                fillOpacity: 1.0,
-                strokeWeight: 1,
-                strokeOpacity: 0.25
-            },
-            iconOffset : new google.maps.Size(0,0),
-            title : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
-            content : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
-            callback : function() {}
-        }
-        bus_terminal.marker = this.createMarker(bus_terminal_marker);
-        bus_terminal.marker.setVisible(false);
-        this.busterminals[bus_terminal.stop_id] = bus_terminal;
+        (function(_mapInterface) {
+            var bus_terminal_marker  = {
+                position : {
+                    lat : parseFloat(bus_terminal.stop_lat),
+                    lng : parseFloat(bus_terminal.stop_lon)
+                },
+                icon : {
+                    path: google.maps.SymbolPath.CIRCLE,
+                    scale: 4,
+                    fillColor: '#000000',
+                    fillOpacity: 1.0,
+                    strokeWeight: 1,
+                    strokeOpacity: 0.25
+                },
+                iconOffset : new google.maps.Size(0,0),
+                title : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
+                content : bus_terminal.stop_name + " (#" + bus_terminal.stop_id + ")",
+                // Sets the destination location
+                callback : function() {
+                    var coords = {lat: this.position.lat(), lng: this.position.lng()};
+                    _mapInterface.geocoder.geocode({'location':coords}, function(results, status) {
+                        $('#destination-input').val(results[0].formatted_address);
+                    });
+                }
+            }
+            bus_terminal.marker = _mapInterface.createMarker(bus_terminal_marker);
+            bus_terminal.marker.setVisible(false);
+            _mapInterface.busterminals[bus_terminal.stop_id] = bus_terminal;
+        })(this);
     },
     updateBusTerminal : function() {
 
@@ -260,6 +262,10 @@ var MapInterface = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude
                     }
+                    
+                    _mapInterface.geocoder.geocode({'location':position}, function(results, status) {
+                        $('#origin-input').val(results[0].formatted_address);
+                    });
 
                     var traveler_marker  = {
                         position : position,
@@ -293,6 +299,7 @@ var MapInterface = {
             center: {lat: 41.6750, lng: -72.7872},
             zoom: 15
         });
+        this.geocoder = new google.maps.Geocoder;
             
 
         (function(_mapInterface) {
