@@ -30,6 +30,16 @@
 		  	var directionsDisplay = new google.maps.DirectionsRenderer;
 		  	var map = MapInterface.map;
 		  	directionsDisplay.setMap(map);
+		  	
+		  		var terminals = MapInterface.busterminals;
+		  	var propValue;
+
+			for(var propName in terminals) {
+    			propValue = terminals[propName]
+
+   				 console.log(propName, propValue);
+			}
+
 
 			var origin_input = document.getElementById('origin-input');
 			var destination_input = document.getElementById('destination-input');
@@ -95,7 +105,31 @@
 			}, function(response, status) {
 			  if (status === google.maps.DirectionsStatus.OK) {
 				directionsDisplay.setDirections(response);
-				convertAddress(document.getElementById("origin-input").value);
+				var originCoordinates = convertAddress(document.getElementById("origin-input").value);
+				var originLatitude = originCoordinates[0];
+				var originLongitude = originCoordinates[1];
+				var stops = getNearbyStops(originLatitude, originLongitude);
+				
+				var distanceMatrixAPICall = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=";
+				distanceMatrixAPICall += originLatitude + ",";
+				distanceMatrixAPICall += originLongitude + "&destinations=";
+				for(var stop in stops){
+					distanceMatrixAPICall += stop.stopLatitude + ",";
+					distanceMatrixAPICall += stop.stopLongitude + "|"; //seems okay to have an extra | even on the last set of coordinates
+				}
+				
+				distanceMatrixAPICall += "&mode=walking&units=metric&key=AIzaSyDnGdU7F4vK16j0ISHJn4Y7oS1eTg4-Qng";
+				//<script src="distanceMatrixAPICall"> --- i think just doing a script call like this will call the API and get json data back. 
+				
+				
+				
+				var numOfShortest = findShortestPathToStop(json); //not sure what the response will be called, so just calling it json for now
+				
+				stops[numOfShortest]; // This should be the bus stop with the shortest path. Can get longitude / latitude or id to place it on map.
+						
+				
+				
+				
 			  } else {
 				window.alert('Directions request failed due to ' + status);
 			  }
@@ -103,16 +137,105 @@
     	}
   	}
   	
+  	//Converts a given address into its' coordinates.
   	function convertAddress( address ) {
   		var geocoder = new google.maps.Geocoder();
 	  	geocoder.geocode( { 
 			'address' : address 
 	  	}, function(results, status) {
 				if ( status == google.maps.GeocoderStatus.OK ) {
-		  			alert(results[0].geometry.location.lat() + " and " + results[0].geometry.location.lng());
+		  			return [results[0].geometry.location.lat(), results[0].geometry.location.lng()];
 				} else alert("Geocode failed, status: "+status);
 	  		});
 	}
+	
+	//Takes two pairs of coordinates and compares their distance (in km).
+	function computeDistance(lat1, lon1, lat2, lon2) {
+  		var p = 0.017453292519943295;    // Math.PI / 180
+  		var c = Math.cos;
+  		var a = 0.5 - c((lat2 - lat1) * p)/2 + 
+          c(lat1 * p) * c(lat2 * p) * 
+          (1 - c((lon2 - lon1) * p))/2;
+
+  		return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+	}
+	
+	//Finds stops within "searchDistance" km's of the origin point.
+	function getNearbyStops(originLatitude, originLongitude){
+		var terminals = MapInterface.busterminals;
+		var propValue;
+		var stopLatitude;
+		var stopLongitude;
+		var closestStop = {distance: 1000000,
+							id: 0}; // Keeping track of the closest stop just in case no stops are within the specified distance.
+		var searchDistance = 200; // Distance in which to search for bus stops.
+		var nearbyStops = [];
+		for(var propName in terminals) {
+			propValue = terminals[propName]
+			stopLatitude = propValue.stop_lat;
+			stopLongitude = propValue.stop_lon;
+			var distance = computeDistance(originLatitude, originLongitude, stopLatitude, stopLongitude);
+			if(distance < closestStop.distance){
+				closestStop.distance = distance;
+				closestStop.id = propValue.id;
+			}
+			if(distance <= searchDistance)
+				nearbyStops.push({ stopID: 			propValue.stop_id,
+								   stopLongitude: 	stopLongitude,
+								   stopLatitude:	stopLatitude,	
+				})		
+		}
+		
+		if(nearbyStops.length == 0)
+			return closestStop;
+		else
+			return nearbyStops;
+	}
+	
+	
+	//Find the shortest path (walking distance) from the origin to bus stop
+	//
+	//Keeping track of distance and time because minutes is the smallest unit, so multiple
+	//	destinations may have the same time but different distances
+	function findShortestPathToStop(json){
+		var shortest = {time: 1000000,
+						distance: 100000;}
+		var stops = json.rows.elements;
+		var time;
+		var count = 0;
+		var countShortest = 0;
+		
+		for(var stop in stops){
+			var min =convertTime(stop.duration.text);
+			if(min < shortest.time || (min == shortest.time && parseInt.stop.distance.value < shortest.distance)){
+				shortest.time = min;
+				shortest.distance = parseInt(stop.distance.value);	
+				countShortest = count;
+			}
+			count++;
+		}	
+		return countShortest;
+	
+	}
+	
+	//Converts a string of days, hours, and/or minutes to minutes.
+	function convertTime(timeString){
+		var split = timeString.split(" ");
+		var minutes = 0;
+	
+		for(var i =0; i <= (split.length/2); i+=2){
+			var num = parseInt(split[i]);
+			if(split[i+1] == "hour" || split[i+1] == "hours")
+				minutes += (num * 60);	
+			else if(split[i+1] == "min" || split[i+1] == "mins")
+				minutes += num; 			
+			else if(split[i+1] == "day" || split[i+1] == "days")
+				minutes += (num * 60 * 24);
+		}
+		return minutes;
+}
+	
+	
 </script>
             
         <button onclick="centerMap()">Center Map</button>
