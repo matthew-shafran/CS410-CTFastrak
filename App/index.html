@@ -7,20 +7,17 @@
   </head>
   <body onload="initSearch()">
     	<div id="map"></div>
+    	<input id="origin-input" class="controls" type="text"
+        	placeholder="Enter an origin location">
+
+    	<input id="destination-input" class="controls" type="text"
+        	placeholder="Enter a destination location">
     	
 		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.3/d3.min.js"></script>        
         <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB1lGcwF1Oe-mDyhYW9oWWscAYoc5T-c7A&libraries=places&callback=MapInterface.init" async defer></script>
         <script src="js/map.js"></script>
-           
-    	<input id="origin-input" class="controls" type="text"
-        	placeholder="Enter an origin location">
-
-    	<input id="destination-input" class="controls" type="text"
-        	placeholder="Enter a destination location">
-        	
-        	
         <script type="text/javascript">
          function initSearch(){
         	var origin_place_id = null;
@@ -37,7 +34,7 @@
 			for(var propName in terminals) {
     			propValue = terminals[propName]
 
-   				 console.log(propName, propValue);
+   				 //console.log(propName, propValue);
 			}
 
 
@@ -199,7 +196,7 @@
 	//	destinations may have the same time but different distances
 	function findShortestPathToStop(json){
 		var shortest = {time: 1000000,
-						distance: 100000;}
+						distance: 100000}
 		var stops = json.rows.elements;
 		var time;
 		var count = 0;
