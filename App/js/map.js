@@ -233,8 +233,8 @@ var MapInterface = {
                 scaledSize: new google.maps.Size(50,16)
             },
             iconOffset : new google.maps.Size(-255,0),
-            title : 'Bus ' + bus.id,
-            content : 'Bus ' + bus.id,
+            title : 'Bus ' + bus.id ,
+            content : getBusTooltip(bus.id),
             
             // Callback function for when clicking on this marker
             callback : function() {
@@ -364,5 +364,46 @@ function distance(coords1, coords2) {
           Math.cos(coords1.lat() * p) * Math.cos(coords2.lat() * p) * 
           (1 - Math.cos((coords2.lng() - coords1.lng()) * p))/2;
   		return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
+}
+
+function getBusTooltip(id){
+	var bus = MapInterface.buses[id];
+	var trip = bus.vehicle.trip;
+	var stopTimes = GTFSInterface.data.stop_times[trip];
+	
+	var nextStop = getNextStop(stopTimes);
+	
+	return "TESTING"; //temporarily return this for testing, change to proper format later
+
+}
+
+function getNextStop(stopTimes){
+	var nextStop;
+	var timeToStop = 10000000;
+	var tempTimeToStop;
+	
+	for(var stop in stopTimes){
+		tempTimeToStop = getTimeDifference(stop.arrival_time);
+		if(tempTimeToStop < timeToStop && tempTimeToStop >= 0){
+			nextStop = stop;
+			timeToStop = tempTimeToStop;
+		}
+	}
+	return [nextStop.stop_id, nextStop.arrivalTime};
+
+}
+
+function getTimeDifference(time){
+	var d = new Date();
+	var datetext = d.toTimeString();
+	datetext = datetext.split(' ')[0];
+
+	var timeSplit = datetext.split(':'); 
+	var stopTimeSplit = time.split(':');
+
+	var secondsCurrent = (timeSplit[0] * 60 * 60) + (timeSplit[1] * 60) + timeSplit[2]; 
+	var secondsStop = (stopTimeSplit[0] * 60 * 60) + (stopTimeSplit[1] * 60) + stopTimeSplit[2];
+	
+	return secondsStop - secondsCurrent;
 }
 
