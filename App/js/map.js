@@ -370,11 +370,12 @@ function getBusTooltip(bus){
 	var trip = bus.vehicle.trip.trip_id;
 	var stopTimes = GTFSInterface.data.stop_times[trip];
 	var nextStop = getNextStop(stopTimes);
+	
 
 	if (typeof nextStop == 'undefined')
-		return bus.id + "test"; //temporarily return this for testing
+		return "Bus #" + bus.id + " has completed its' route and is now out of service."; 
 	else
-		return nextStop.arrival_time;
+		return "Bus #" + bus.id + " will arrive at Stop #" + nextStop.stop_id + " at " + nextStop.arrival_time;
 
 }
 
