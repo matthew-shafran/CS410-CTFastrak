@@ -184,7 +184,7 @@ var MapInterface = {
             });
         });
     },
-    drawRoute : function(route, stops) {
+    drawRoute : function(route, stops, bus_id) {
         if (MapInterface.route) MapInterface.route.setMap(null);
         if (MapInterface.routestops) {
             for (var i = 0; i < MapInterface.routestops.length; i++) {
@@ -209,12 +209,15 @@ var MapInterface = {
         });
         MapInterface.route = routePath;
         routePath.setMap(MapInterface.map);
-        
-        // Draw stops measles
         MapInterface.routestops = stops;
         for (var i = 0; i < stops.length; i++) {
             var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
             newicon.fillColor = route.color;
+            if(!(typeof(stops[i].arrival.time) === 'undefined')){
+           		var arrivalTime = convertEpochTime(stops[i].arrival.time + (stops[i].arrival.delay * 10));
+            	MapInterface.busterminals[stops[i].stop_id].marker.myHtmlContent = "Bus #" + bus_id + " will arrive at stop #" + stops[i].stop_id + " at " + arrivalTime;
+            }
+            MapInterface.busterminals[stops[i].stop_id].marker.infoWindow.setContent(MapInterface.busterminals[stops[i].stop_id].marker.myHtmlContent);
             MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
             MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
         }
@@ -244,7 +247,7 @@ var MapInterface = {
                 var shape = GTFSInterface.data.shapes[shape_id];
                 shape.color = color;
                 var stops = MapInterface.trips[trip_id].trip_update.stop_time_update;
-                MapInterface.drawRoute(shape, stops); 
+                MapInterface.drawRoute(shape, stops, bus.id); 
             }
         }
         bus.marker = MapInterface.createMarker(busmarker);
@@ -366,6 +369,10 @@ function distance(coords1, coords2) {
   		return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
 }
 
+function getBusStopRouteTooltip(stop){
+
+}
+
 function getBusTooltip(bus){
 	var trip = bus.vehicle.trip.trip_id;
 	var stopTimes = GTFSInterface.data.stop_times[trip];
@@ -412,5 +419,12 @@ function getTimeDifference(time){
 	var secondsStop = (stopTimeSplit[0] * 60 * 60) + (stopTimeSplit[1] * 60) + stopTimeSplit[2];
 	
 	return secondsStop - secondsCurrent;
+}
+
+function convertEpochTime(time){
+	var date = new Date(time * 1000);
+	var d1 = date.toString().split(" ");
+	var d2 = d1[4];
+	return d2;
 }
 
