@@ -87,6 +87,7 @@ var MapInterface = {
     busterminals : {},
     trips: {},
     markers: [],
+    routes: [],
     updateMap : function() {
         JSONInterface.getData(function(data) {
             for (var i = 0; i < data.length; i++) {
@@ -142,10 +143,15 @@ var MapInterface = {
             this.markers[i].infoWindow.close();
         }
     },
+    toggleMarkers: function(visibility) {
+        for (var busId in this.buses) {
+            this.buses[busId].marker.setVisible(visibility);
+        }
+    },
     handleLocationError : function(browserHasGeolocation) {
         alert(browserHasGeolocation ? 'Error: The Geolocation service failed.' : 'Error: Your browser doesn\'t support geolocation.');
     },
-    getNearestTerminal : function(routeId) {
+    getNearestTerminal : function() {
        var dist = Infinity;
        var nearest_stop_id;
        for (var i = 0; i < MapInterface.routestops.length; i++) {
@@ -165,6 +171,11 @@ var MapInterface = {
         }
 
         var nearestTerminal = MapInterface.getNearestTerminal();
+        
+        if (MapInterface.routestops) {
+
+        }
+
 
         // Route walking directions to nearest stop
         MapInterface.directions.route({
@@ -184,13 +195,30 @@ var MapInterface = {
             });
         });
     },
-    drawRoute : function(route, stops) {
-        if (MapInterface.route) MapInterface.route.setMap(null);
+    drawRoutes : function() {
+        for (var trip_id in MapInterface.trips) {
+            if (trip.trip_update.trip.route_id) {
+                
+            }
+            var trip = MapInterface.trips[trip_id];
+            var color = "#"+GTFSInterface.data.routes[trip.trip_update.trip.route_id].route_color;
+            var shape_id = GTFSInterface.data.trips[trip_id].shape_id;
+            var shape = GTFSInterface.data.shapes[shape_id];
+            shape.color = color;
+
+            var stops = trip.trip_update.stop_time_update;
+
+            MapInterface.drawRoute(shape, stops, true);
+        }
+    },
+    drawRoute : function(route, stops, hideMarkers) {
+
+        /*if (MapInterface.route) MapInterface.route.setMap(null);
         if (MapInterface.routestops) {
             for (var i = 0; i < MapInterface.routestops.length; i++) {
                 MapInterface.busterminals[MapInterface.routestops[i].stop_id].marker.setVisible(false);
             }
-        }
+        }*/
 
         // Draw route shape
         var routeCoordinates = [];
@@ -207,16 +235,19 @@ var MapInterface = {
             strokeOpacity: 0.5,
             strokeWeight: 4
         });
-        MapInterface.route = routePath;
+        MapInterface.routes.push({path:routePath,stops:stops});
+        //MapInterface.route = routePath;
         routePath.setMap(MapInterface.map);
         
         // Draw stops measles
-        MapInterface.routestops = stops;
-        for (var i = 0; i < stops.length; i++) {
-            var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
-            newicon.fillColor = route.color;
-            MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
-            MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
+        if (!hideMarkers) {
+            //MapInterface.routestops = stops;
+            for (var i = 0; i < stops.length; i++) {
+                var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
+                newicon.fillColor = route.color;
+                MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
+                MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
+            }
         }
     },
     createBus : function(bus) {
@@ -366,3 +397,4 @@ function distance(coords1, coords2) {
   		return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
 }
 
+function 
