@@ -211,14 +211,13 @@ var MapInterface = {
             MapInterface.drawRoute(shape, stops, true);
         }
     },
-    drawRoute : function(route, stops, hideMarkers) {
-
-        /*if (MapInterface.route) MapInterface.route.setMap(null);
+    drawRoute : function(route, stops, bus_id, hideMarkers) {
+        if (MapInterface.route) MapInterface.route.setMap(null);
         if (MapInterface.routestops) {
             for (var i = 0; i < MapInterface.routestops.length; i++) {
                 MapInterface.busterminals[MapInterface.routestops[i].stop_id].marker.setVisible(false);
             }
-        }*/
+        }
 
         // Draw route shape
         var routeCoordinates = [];
@@ -249,6 +248,19 @@ var MapInterface = {
                 MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
             }
         }
+
+        MapInterface.routestops = stops;
+        for (var i = 0; i < stops.length; i++) {
+            var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
+            newicon.fillColor = route.color;
+            if(!(typeof(stops[i].arrival.time) === 'undefined')){
+           		var arrivalTime = convertEpochTime(stops[i].arrival.time + (stops[i].arrival.delay * 10));
+            	MapInterface.busterminals[stops[i].stop_id].marker.myHtmlContent = "Bus #" + bus_id + " will arrive at stop #" + stops[i].stop_id + " at " + arrivalTime;
+            }
+            MapInterface.busterminals[stops[i].stop_id].marker.infoWindow.setContent(MapInterface.busterminals[stops[i].stop_id].marker.myHtmlContent);
+            MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
+            MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
+        }
     },
     createBus : function(bus) {
         var busmarker  = {
@@ -264,8 +276,8 @@ var MapInterface = {
                 scaledSize: new google.maps.Size(50,16)
             },
             iconOffset : new google.maps.Size(-255,0),
-            title : 'Bus ' + bus.id,
-            content : 'Bus ' + bus.id,
+            title : 'Bus ' + bus.id ,
+            content : getBusTooltip(bus),
             
             // Callback function for when clicking on this marker
             callback : function() {
@@ -275,7 +287,7 @@ var MapInterface = {
                 var shape = GTFSInterface.data.shapes[shape_id];
                 shape.color = color;
                 var stops = MapInterface.trips[trip_id].trip_update.stop_time_update;
-                MapInterface.drawRoute(shape, stops); 
+                MapInterface.drawRoute(shape, stops, bus.id); 
             }
         }
         bus.marker = MapInterface.createMarker(busmarker);
@@ -397,4 +409,61 @@ function distance(coords1, coords2) {
   		return 12742 * Math.asin(Math.sqrt(a)); // 2 * R; R = 6371 km
 }
 
-function 
+function getBusStopRouteTooltip(stop){
+
+}
+
+function getBusTooltip(bus){
+	var trip = bus.vehicle.trip.trip_id;
+	var stopTimes = GTFSInterface.data.stop_times[trip];
+	var nextStop = getNextStop(stopTimes);
+	
+
+	if (typeof nextStop == 'undefined')
+		return "Bus #" + bus.id + " has completed its' route and is now out of service."; 
+	else
+		return "Bus #" + bus.id + " will arrive at Stop #" + nextStop.stop_id + " at " + nextStop.arrival_time;
+
+}
+
+function getNextStop(stopTimes){
+	var nextStop;
+	var timeToStop = 10000000;
+	var tempTimeToStop;
+	
+	
+	if(stopTimes){
+		for(var time in stopTimes){
+			tempTimeToStop = getTimeDifference(stopTimes[time].arrival_time);
+			if(tempTimeToStop < timeToStop && tempTimeToStop >= 0){
+				nextStop = stopTimes[time];
+				timeToStop = tempTimeToStop;
+			}
+		}
+		return nextStop;
+}
+else
+	return "No next stop";
+
+}
+
+function getTimeDifference(time){
+	var d = new Date();
+	var datetext = d.toTimeString();
+	datetext = datetext.split(' ')[0];
+
+	var timeSplit = datetext.split(':'); 
+	var stopTimeSplit = time.split(':');
+
+	var secondsCurrent = (timeSplit[0] * 60 * 60) + (timeSplit[1] * 60) + timeSplit[2]; 
+	var secondsStop = (stopTimeSplit[0] * 60 * 60) + (stopTimeSplit[1] * 60) + stopTimeSplit[2];
+	
+	return secondsStop - secondsCurrent;
+}
+
+function convertEpochTime(time){
+	var date = new Date(time * 1000);
+	var d1 = date.toString().split(" ");
+	var d2 = d1[4];
+	return d2;
+}
