@@ -13,7 +13,9 @@
     	<input id="destination-input" class="controls" type="text"
         	placeholder="Enter a destination location">
 
-        <button id="hide-buses" class="controls" type="submit" style="z-index:0;position:absolute;top:0px;left:600px;">Hide Buses</button>
+        <button id="route-button" class="controls" type="submit">Route</button>
+        <button id="toggle-buses" class="controls" type="submit">Toggle Buses</button>
+        <button id="toggle-routes" class="controls" type="submit">Toggle Routes</button>
     	
 		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
@@ -43,9 +45,15 @@
 			var origin_input = document.getElementById('origin-input');
 			var destination_input = document.getElementById('destination-input');
 		  	var modes = document.getElementById('mode-selector');
-	
+            var route_button = document.getElementById('route-button');
+            var toggle_buses = document.getElementById('toggle-buses');
+            var toggle_routes = document.getElementById('toggle-routes');
+
 			map.controls[google.maps.ControlPosition.TOP_LEFT].push(origin_input);
 			map.controls[google.maps.ControlPosition.TOP_LEFT].push(destination_input);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(route_button);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(toggle_buses);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(toggle_routes);
 
 		  	var origin_autocomplete = new google.maps.places.Autocomplete(origin_input);
 		 	origin_autocomplete.bindTo('bounds', map);
@@ -62,7 +70,7 @@
 			}
 		  }
 
-		  origin_autocomplete.addListener('place_changed', function() {
+		  /*origin_autocomplete.addListener('place_changed', function() {
 			var place = origin_autocomplete.getPlace();
 			if (!place.geometry) {
 			  window.alert("Autocomplete's returned place contains no geometry");
@@ -90,9 +98,9 @@
 			destination_place_id = place.place_id;
 			route(origin_place_id, destination_place_id, travel_mode,
 				  directionsService, directionsDisplay);
-		  });
+		  });*/
 
-		  function route(origin_place_id, destination_place_id, travel_mode,
+		  /*function route(origin_place_id, destination_place_id, travel_mode,
 						 directionsService, directionsDisplay) {
 			if (!origin_place_id || !destination_place_id) {
 			  return;
@@ -133,7 +141,7 @@
 				window.alert('Directions request failed due to ' + status);
 			  }
     	});
-    	}
+    	}*/
   	}
   	
   	//Converts a given address into its' coordinates.

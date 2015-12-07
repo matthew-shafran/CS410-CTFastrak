@@ -18,11 +18,10 @@ html, body {
     outline: none;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
-
 #origin-input,
 #destination-input {
     background-color: #fff;
-    font-family: Roboto;
+    font-family: Roboto, sans-serif;
     font-size: 15px;
     font-weight: 300;
     margin-left: 12px;
@@ -36,3 +35,20 @@ html, body {
     border-color: #4d90fe;
 }
 
+#route-button, #toggle-buses, #toggle-routes {
+    background-color: #4285f4;
+    border-radius: 2px;
+    color: #FFF;
+    height: 33px;
+    font-size: 12px;
+    margin-left: 10px;
+    cursor: pointer;
+}
+
+#route-button:active, #toggle-buses:active, #toggle-routes:active {
+    color: red;
+}
+
+#toggle-buses, #toggle-routes {
+    background-color: #6d6d6d;
+}
