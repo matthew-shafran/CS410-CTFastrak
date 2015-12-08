@@ -248,63 +248,64 @@ var MapInterface = {
         }
     },
     drawRoute : function(trip_id) {
-        var route_id = GTFSInterface.data.trips[trip_id].route_id;
-        var shape_id = GTFSInterface.data.trips[trip_id].shape_id;
-        var route = GTFSInterface.data.shapes[shape_id];
-        route.color = "#"+GTFSInterface.data.routes[route_id].route_color;
-        var stops = MapInterface.trips[trip_id].trip_update.stop_time_update;
-        var routeIndex = -1;
+        if (typeof GTFSInterface.data.trips[trip_id] !== "undefined") {
+            var route_id = GTFSInterface.data.trips[trip_id].route_id;
+            var shape_id = GTFSInterface.data.trips[trip_id].shape_id;
+            var route = GTFSInterface.data.shapes[shape_id];
+            route.color = "#"+GTFSInterface.data.routes[route_id].route_color;
+            var stops = MapInterface.trips[trip_id].trip_update.stop_time_update;
+            var routeIndex = -1;
 
-        for (i = 0; i < MapInterface.routes.length; i++) {
-            if (MapInterface.routes[i].path.trip_id === trip_id) {
-                routeIndex = i;
+            for (i = 0; i < MapInterface.routes.length; i++) {
+                if (MapInterface.routes[i].path.trip_id === trip_id) {
+                    routeIndex = i;
+                } else {
+                    MapInterface.routes[i].path.setMap(null);
+                    for (j = 0; j < MapInterface.routes[i].stops.length; j++) {
+                        MapInterface.routes[i].stops[j].marker.setVisible(false);
+                    }
+                }
+            }
+            
+            if (routeIndex < 0) {
+                // Draw route shape
+                var routeCoordinates = [];
+                for (var i = 0; i < route.length; i++) {
+                    routeCoordinates.push({
+                        lat: parseFloat(route[i].shape_pt_lat),
+                        lng: parseFloat(route[i].shape_pt_lon)
+                    });
+                }
+                var routePath = new google.maps.Polyline({
+                    path: routeCoordinates,
+                    geodesic: true,
+                    strokeColor: route.color,
+                    strokeOpacity: 0.5,
+                    strokeWeight: 4
+                });
+                routePath.route_id = route_id;
+                routePath.trip_id = trip_id;
+                
+                // Draw stops measles
+                var routeStops = [];
+                for (var i = 0; i < stops.length; i++) {
+                    var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
+                    newicon.fillColor = route.color;
+                    MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
+                    MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
+                    routeStops.push(MapInterface.busterminals[stops[i].stop_id]);
+                }
+
+                MapInterface.routes.push({path:routePath,stops:routeStops});
+                routePath.setMap(MapInterface.map);
             } else {
-                MapInterface.routes[i].path.setMap(null);
-                for (j = 0; j < MapInterface.routes[i].stops.length; j++) {
-                    MapInterface.routes[i].stops[j].marker.setVisible(false);
+                MapInterface.routes[routeIndex].path.setMap(MapInterface.map);
+                for (var i = 0; i < MapInterface.routes[routeIndex].stops.length; i++) {
+                    MapInterface.routes[routeIndex].stops[i].marker.icon.fillColor = route.color;
+                    MapInterface.routes[routeIndex].stops[i].marker.setVisible(true);
                 }
             }
         }
-        
-        if (routeIndex < 0) {
-            // Draw route shape
-            var routeCoordinates = [];
-            for (var i = 0; i < route.length; i++) {
-                routeCoordinates.push({
-                    lat: parseFloat(route[i].shape_pt_lat),
-                    lng: parseFloat(route[i].shape_pt_lon)
-                });
-            }
-            var routePath = new google.maps.Polyline({
-                path: routeCoordinates,
-                geodesic: true,
-                strokeColor: route.color,
-                strokeOpacity: 0.5,
-                strokeWeight: 4
-            });
-            routePath.route_id = route_id;
-            routePath.trip_id = trip_id;
-            
-            // Draw stops measles
-            var routeStops = [];
-            for (var i = 0; i < stops.length; i++) {
-                var newicon = MapInterface.busterminals[stops[i].stop_id].marker.icon;
-                newicon.fillColor = route.color;
-                MapInterface.busterminals[stops[i].stop_id].marker.setIcon(newicon);
-                MapInterface.busterminals[stops[i].stop_id].marker.setVisible(true);
-                routeStops.push(MapInterface.busterminals[stops[i].stop_id]);
-            }
-
-            MapInterface.routes.push({path:routePath,stops:routeStops});
-            routePath.setMap(MapInterface.map);
-        } else {
-            MapInterface.routes[routeIndex].path.setMap(MapInterface.map);
-            for (var i = 0; i < MapInterface.routes[routeIndex].stops.length; i++) {
-                MapInterface.routes[routeIndex].stops[i].marker.icon.fillColor = route.color;
-                MapInterface.routes[routeIndex].stops[i].marker.setVisible(true);
-            }
-        }
-
     },
     createBus : function(bus) {
         var busmarker  = {

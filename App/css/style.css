@@ -46,7 +46,7 @@ html, body {
 }
 
 #route-button:active, #toggle-buses:active, #toggle-routes:active {
-    color: red;
+    box-shadow: inset 0px 0px 5px 0px #2d2d2d;
 }
 
 #toggle-buses, #toggle-routes {
