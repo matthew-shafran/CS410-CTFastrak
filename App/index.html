@@ -12,6 +12,10 @@
 
     	<input id="destination-input" class="controls" type="text"
         	placeholder="Enter a destination location">
+
+        <button id="route-button" class="controls" type="submit">Route</button>
+        <button id="toggle-buses" class="controls" type="submit">Toggle Buses</button>
+        <button id="toggle-routes" class="controls" type="submit">Toggle Routes</button>
     	
 		<script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/queue-async/1.0.7/queue.min.js"></script>
@@ -41,9 +45,15 @@
 			var origin_input = document.getElementById('origin-input');
 			var destination_input = document.getElementById('destination-input');
 		  	var modes = document.getElementById('mode-selector');
-	
+            var route_button = document.getElementById('route-button');
+            var toggle_buses = document.getElementById('toggle-buses');
+            var toggle_routes = document.getElementById('toggle-routes');
+
 			map.controls[google.maps.ControlPosition.TOP_LEFT].push(origin_input);
 			map.controls[google.maps.ControlPosition.TOP_LEFT].push(destination_input);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(route_button);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(toggle_buses);
+			map.controls[google.maps.ControlPosition.TOP_LEFT].push(toggle_routes);
 
 		  	var origin_autocomplete = new google.maps.places.Autocomplete(origin_input);
 		 	origin_autocomplete.bindTo('bounds', map);
@@ -59,79 +69,6 @@
 			  map.setZoom(17);
 			}
 		  }
-
-		  origin_autocomplete.addListener('place_changed', function() {
-			var place = origin_autocomplete.getPlace();
-			if (!place.geometry) {
-			  window.alert("Autocomplete's returned place contains no geometry");
-			  return;
-			}
-			expandViewportToFitPlace(map, place);
-
-			// If the place has a geometry, store its place ID and route if we have
-			// the other place ID
-			origin_place_id = place.place_id;
-			route(origin_place_id, destination_place_id, travel_mode,
-				  directionsService, directionsDisplay);
-		  });
-
-		  destination_autocomplete.addListener('place_changed', function() {
-			var place = destination_autocomplete.getPlace();
-			if (!place.geometry) {
-			  window.alert("Autocomplete's returned place contains no geometry");
-			  return;
-			}
-			expandViewportToFitPlace(map, place);
-
-			// If the place has a geometry, store its place ID and route if we have
-			// the other place ID
-			destination_place_id = place.place_id;
-			route(origin_place_id, destination_place_id, travel_mode,
-				  directionsService, directionsDisplay);
-		  });
-
-		  function route(origin_place_id, destination_place_id, travel_mode,
-						 directionsService, directionsDisplay) {
-			if (!origin_place_id || !destination_place_id) {
-			  return;
-			}
-			directionsService.route({
-			  origin: {'placeId': origin_place_id},
-			  destination: {'placeId': destination_place_id},
-			  travelMode: travel_mode
-			}, function(response, status) {
-			  if (status === google.maps.DirectionsStatus.OK) {
-				directionsDisplay.setDirections(response);
-				var originCoordinates = convertAddress(document.getElementById("origin-input").value);
-				var originLatitude = originCoordinates[0];
-				var originLongitude = originCoordinates[1];
-				var stops = getNearbyStops(originLatitude, originLongitude);
-				
-				var distanceMatrixAPICall = "https://maps.googleapis.com/maps/api/distancematrix/json?origins=";
-				distanceMatrixAPICall += originLatitude + ",";
-				distanceMatrixAPICall += originLongitude + "&destinations=";
-				for(var stop in stops){
-					distanceMatrixAPICall += stop.stopLatitude + ",";
-					distanceMatrixAPICall += stop.stopLongitude + "|"; //seems okay to have an extra | even on the last set of coordinates
-				}
-				
-				distanceMatrixAPICall += "&mode=walking&units=metric&key=AIzaSyDnGdU7F4vK16j0ISHJn4Y7oS1eTg4-Qng";
-				//<script src="distanceMatrixAPICall"> --- i think just doing a script call like this will call the API and get json data back. 
-				
-				
-				
-				var numOfShortest = findShortestPathToStop(json); //not sure what the response will be called, so just calling it json for now
-				
-				stops[numOfShortest]; // This should be the bus stop with the shortest path. Can get longitude / latitude or id to place it on map.
-						
-				
-				
-				
-			  } else {
-				window.alert('Directions request failed due to ' + status);
-			  }
-    	});
-    	}
   	}
   	
   	//Converts a given address into its' coordinates.
@@ -234,8 +171,6 @@
 	
 	
 </script>
-            
-        <button onclick="centerMap()">Center Map</button>
     </body>
 </html>
 
